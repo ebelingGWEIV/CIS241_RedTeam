@@ -53,44 +53,51 @@ Notes:
 
 /* MARCOS */
 #define DECIMAL 46              // ASCii value for '.'
-#define NUMENTRIES 2332     // Lines of data
+#define NUMENTRIES 2331            // (2332 Total Lines) - (fisrt line) = 2331 Lines of data
 
-/* Order of variables from largest to smallest data type  to reduce memory consumption */
+/* Variable order: Large -> Small for memory optimization */
 struct dataEntry{
 
     double putVol;
     double callVol;
     double optVol;
     float ratio;
-    int year;
+    unsigned int year  : 5;
+    unsigned int day   : 5;
     unsigned int month : 4;
-    unsigned int day : 5;
 
 };
 
-/* Program functions */
+/* Functions */
 void importFile(struct dataEntry dataArr[NUMENTRIES]);
 void advanceCurserToData(char *buff, FILE *fp);
-void extractLine(char *buff, double *numberArr);
-int formatLine(char *tempArr);
+void parseLineToDouble(char *buff, double *numberArr);
+void formatLine(char *tempArr);
 void storeLine(double *lineOfData, struct dataEntry dataArr[NUMENTRIES]);
 
 /* Global variables */
-int i = 0, j = 0;
+int i = 0;
 int logNum = 0;
 
 
+int main(){
 
-int main() {
-
-    struct dataEntry dataArr[NUMENTRIES];
+    struct dataEntry dataArr[NUMENTRIES];       // Array of type "struct dataEntry"
 
     importFile(dataArr);
 
-    unsigned int dataArrSize = NUMENTRIES - 3;  // Location in the structure array of the last line of data
-    //    printf("%.2f\t", dataArr[NUMENTRIES - 3].optVol);
+    unsigned int dataArrSize = NUMENTRIES - 1;  // Location in the structure array of the last line of data
 
+    // CONFIRM LAST LINE OF DATA  -> 10/4/19,2.32,1015727,437756,1453483
+    printf("\n%d\t", dataArr[dataArrSize].month);
+    printf("%d\t",   dataArr[dataArrSize].day);
+    printf("%d\t",   dataArr[dataArrSize].year);
+    printf("%.2f\t", dataArr[dataArrSize].ratio);
+    printf("%.2f\t", dataArr[dataArrSize].putVol);
+    printf("%.2f\t", dataArr[dataArrSize].callVol);
+    printf("%.2f\t", dataArr[dataArrSize].optVol);
 
+    return 0;
 }
 
 
@@ -102,21 +109,21 @@ int main() {
 void importFile(struct dataEntry dataArr[NUMENTRIES]){
 
     double lineOfData[7];
-
-    FILE *fp;
-    fp = fopen("marketData.txt", "r");
     char buff[40];
 
-    rewind(fp);     // Ensure the curser is at the begining of the file
+    FILE *fp;
+    fp = fopen("./marketData.txt", "r");
+
+    rewind(fp);
 
     advanceCurserToData(buff, fp);
 
     while(!feof(fp)){
 
-        extractLine(buff, lineOfData);
-        storeLine(lineOfData, dataArr);
         fscanf(fp, "%s", buff);
-        logNum++;
+        formatLine(buff);
+        parseLineToDouble(buff, lineOfData);
+        storeLine(lineOfData, dataArr);
 
     }
 
@@ -128,12 +135,13 @@ void importFile(struct dataEntry dataArr[NUMENTRIES]){
 
 /*************************************************************************************************************************
 * ADVANCE THE CURSOR:  The begining of the text file has column titles which are not part of the data.  This will move
-* the cursor (file pointer fp) to the begining of the first line of data.
+* the cursor (file pointer fp) to the end of the first line of data.
 *************************************************************************************************************************/
 void advanceCurserToData(char *buff, FILE *fp){
 
-    for(i = 0; i <= 10; i++)
+    for(i = 0; i < 10; i++)
         fscanf(fp, "%s", buff);
+
     return;
 }
 
@@ -142,18 +150,13 @@ void advanceCurserToData(char *buff, FILE *fp){
 * EXRTRACT NUMBERS FROM STRING:  Convert the numbers from the string (line of data) to double values.  Store the
 * numerical values in the array "lineOfData[]".  Will extract all numbers from the string.
 *************************************************************************************************************************/
-void extractLine(char *buff, double *lineOfData){
+void parseLineToDouble(char *buff, double *lineOfData){
 
-    char tempArr[100];
-    int size = formatLine(strcpy(tempArr, buff));
+    char *ptrArray[20] = {buff};
 
-    char *ptrArray[20] = {tempArr};
-
-    for(i = 0; i <= 6 ; i++){
-
+    for(i = 0; i <= 6 ; i++)
         lineOfData[i] = strtod(ptrArray[i], &ptrArray[i+1]);
-        size = strlen(ptrArray[i+1]);
-    }
+
     return;
 }
 
@@ -162,14 +165,15 @@ void extractLine(char *buff, double *lineOfData){
 * FORMAT STRING FOR THE strtod() FUNCTION: The strtod() function is weak and requires specific formating for it to
 * successfully process a string therefore all punctuation is replace by whitespace except for '.' for decimal nums
 *************************************************************************************************************************/
-int formatLine(char *tempArr){
+void formatLine(char *tempArr){
+
     int size = strlen(tempArr);
 
     for(i = 0; i <= size; i++)
         if(ispunct(tempArr[i]))
             (tempArr[i] == DECIMAL)  ?  (tempArr[i]) :  (tempArr[i] = ' ');
 
-    return strlen(tempArr);
+    return;
 }
 
 
@@ -186,20 +190,8 @@ void storeLine(double *lineOfData, struct dataEntry dataArr[NUMENTRIES]){
     dataArr[logNum].callVol = lineOfData[5];
     dataArr[logNum].optVol  = lineOfData[6];
 
+    logNum++;
+
     return;
 }
-
-
-
-
-
-/* DEBUG PRINT STATEMENTS
-    printf("\n%d\t", dataArr[NUMENTRIES - 3].month);
-    printf("%d\t",   dataArr[NUMENTRIES - 3].day);
-    printf("%d\t",   dataArr[NUMENTRIES - 3].year);
-    printf("%.2f\t", dataArr[NUMENTRIES - 3].ratio);
-    printf("%.2f\t", dataArr[NUMENTRIES - 3].putVol);
-    printf("%.2f\t", dataArr[NUMENTRIES - 3].callVol);
-    printf("%.2f\t", dataArr[NUMENTRIES - 3].optVol);
-*/
 
