@@ -65,7 +65,17 @@ struct dataEntry{
     unsigned int year  : 5;
     unsigned int day   : 5;
     unsigned int month : 4;
+};
 
+/* Used for queries over a specific period of time
+ *
+ * January is 1
+ * First of the month is 1
+ * */
+struct date {
+    unsigned int day : 5;
+    unsigned int month : 4;
+    unsigned int year : 5;
 };
 
 /* Functions */
@@ -74,6 +84,12 @@ void advanceCurserToData(char *buff, FILE *fp);
 void parseLineToDouble(char *buff, double *numberArr);
 void formatLine(char *tempArr);
 void storeLine(double *lineOfData, struct dataEntry dataArr[NUMENTRIES]);
+
+int CompareDataToMonth(struct dataEntry data, struct date checkDate);
+int FindStartIndex(struct date start, struct dataEntry const dataArr[NUMENTRIES]);
+void GetMarketType(struct date start, struct date end, int types[], int monthIncrement, struct dataEntry const dataArr[NUMENTRIES]);
+int CompareDate(struct date A, struct date B);
+void IncreaseMonth(struct date *dateToChange, int months);
 
 /* Global variables */
 int i = 0;
@@ -97,6 +113,20 @@ int main(){
 //    printf("%.2f\t", dataArr[NUMENTRIES - 2].putVol);
 //    printf("%.2f\t", dataArr[NUMENTRIES - 2].callVol);
 //    printf("%.2f\t", dataArr[NUMENTRIES - 2].optVol);
+
+
+    /* This is an example of how to use the functions I added. I'll be doing more with this later, but I have the core of it done and wanted you
+     * guys to be able to use the helper methods I've created.*/
+    int types[NUMENTRIES / 4];
+    struct date start = {6, 7, 10};
+    struct date end = {4, 10, 19};
+    GetMarketType(start, end, types, 3, dataArr);
+
+    for(int index = 0; index < NUMENTRIES / 4; index++)
+    {
+        printf("For %d quarter of year %d, the market was %s\n", ((index)%4 + 1), 0000, (types[index] == -1 ? "bear" : "bull"));
+    }
+
     return 0;
 }
 
@@ -201,5 +231,121 @@ void storeLine(double *lineOfData, struct dataEntry dataArr[NUMENTRIES]){
     logNum++;
 
     return;
+}
+
+
+/**
+ * Get the market type for over a given period.
+ * Recommended for start.day == 0 and end.day == 31
+ *
+ * -1 for bear, +1 for bull
+ * @author George Ebeling
+ */
+void GetMarketType(struct date start, struct date end, int types[], int monthIncrement, struct dataEntry const dataArr[NUMENTRIES])
+{
+    //Start must be less than end
+    if(CompareDate(start, end) >= 0) return;
+
+
+    // loop through the entire time period given
+    for(int typeIndex = 0; -1 == CompareDate(start, end); IncreaseMonth(&start, monthIncrement), typeIndex++)
+    {
+        // Find the starting index based on the start date
+        int index = FindStartIndex(start, dataArr);
+
+        // A date for when to stop the sub period.
+        struct date subPeriodEnd = start;
+        IncreaseMonth(&subPeriodEnd, monthIncrement);
+
+        int bullCount = 0, bearCount = 0;
+
+        // loop through the sub period until the end of the sub period has been reached.
+        for(; CompareDataToMonth(dataArr[index], subPeriodEnd) < 0; index++)
+        {
+            if(dataArr[index].ratio > 1)
+                bearCount++;
+            else
+                bullCount++;
+        }
+
+        // Set the market type for this period
+        //TODO if there are index out of bound errors, issue a memory check here before adding to the array
+        types[typeIndex] = (bearCount >= bullCount ? -1 : 1);
+    }
+}
+
+
+/**
+ * Compare two dates
+ * @return 1 if A>B, -1 if A<B, 0 if A==B
+ * @author George Ebeling
+ */
+int CompareDate(struct date A, struct date B)
+{
+    if(A.year > B.year)
+        return 1;
+    else if(B.year > A.year)
+        return -1;
+    else
+        {
+        if(A.month > B.month)
+            return 1;
+        else if(B.month > A.month)
+            return -1;
+        else
+            {
+            if(A.day > B.day)
+                return 1;
+            else if(B.day > A.day)
+                return -1;
+            else
+                return 0;
+        }
+    }
+}
+
+/**
+ * Safely incrase the month. If the month was increase passed december, increase the year and decrease the months until a valid date has been found.
+ * @param dateToChange
+ * @param months
+ * @author George Ebeling
+ */
+void IncreaseMonth(struct date *dateToChange, int months)
+{
+    dateToChange->month += months;
+    //Continue increase the year and decreasing the month until the months are valid
+    while(dateToChange->month > 12)
+    {
+        dateToChange->month -= 12;
+        dateToChange->year += 1;
+    }
+}
+
+
+/**
+ * Compares the given dataEntry struct to the given checkData using CompareDate().
+ * @param data Of type struct dataEntry
+ * @param checkDate Of type struct date
+ * @return CompareDate(dataEntry, checkDate)
+ * @author George Ebeling
+ */
+int CompareDataToMonth(struct dataEntry data, struct date checkDate)
+{
+    struct date dataDate = {data.day, data.month, data.year};
+    return CompareDate(dataDate, checkDate);
+}
+
+/**
+ * Finds which index of dataArr contains where to begin to match the start date.
+ * @author George Ebeling
+ */
+int FindStartIndex(struct date start, struct dataEntry const dataArr[NUMENTRIES])
+{
+    int index = 0;
+
+    // Loop until the starting location has been found.
+    for(;CompareDataToMonth(dataArr[index], start) < 0; index++);
+
+    return index;
 }
 
