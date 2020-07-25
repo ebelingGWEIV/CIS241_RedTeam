@@ -89,14 +89,14 @@ int main(){
     unsigned int dataArrSize = NUMENTRIES - 1;  // Location in the structure array of the last line of data
 
     // CONFIRM LAST LINE OF DATA  -> 10/4/19,2.32,1015727,437756,1453483
-    printf("\n%d\t", dataArr[dataArrSize].month);
-    printf("%d\t",   dataArr[dataArrSize].day);
-    printf("%d\t",   dataArr[dataArrSize].year);
-    printf("%.2f\t", dataArr[dataArrSize].ratio);
-    printf("%.2f\t", dataArr[dataArrSize].putVol);
-    printf("%.2f\t", dataArr[dataArrSize].callVol);
-    printf("%.2f\t", dataArr[dataArrSize].optVol);
-
+//    printf("\nFinal line check:");
+//    printf("\n%d\t", dataArr[NUMENTRIES - 2].month);
+//    printf("%d\t",   dataArr[NUMENTRIES - 2].day);
+//    printf("%d\t",   dataArr[NUMENTRIES - 2].year);
+//    printf("%.2f\t", dataArr[NUMENTRIES - 2].ratio);
+//    printf("%.2f\t", dataArr[NUMENTRIES - 2].putVol);
+//    printf("%.2f\t", dataArr[NUMENTRIES - 2].callVol);
+//    printf("%.2f\t", dataArr[NUMENTRIES - 2].optVol);
     return 0;
 }
 
@@ -189,6 +189,14 @@ void storeLine(double *lineOfData, struct dataEntry dataArr[NUMENTRIES]){
     dataArr[logNum].putVol  = lineOfData[4];
     dataArr[logNum].callVol = lineOfData[5];
     dataArr[logNum].optVol  = lineOfData[6];
+
+//    printf("\n%d\t", dataArr[logNum].month);
+//    printf("%d\t",   dataArr[logNum].day);
+//    printf("%d\t",   dataArr[logNum].year);
+//    printf("%.2f\t", dataArr[logNum].ratio);
+//    printf("%.2f\t", dataArr[logNum].putVol);
+//    printf("%.2f\t", dataArr[logNum].callVol);
+//    printf("%.2f\t", dataArr[logNum].optVol);
 
     logNum++;
 
