@@ -314,7 +314,7 @@ void MarketType_Quarterly(const struct dataEntry *dataArr, const struct date *st
 }
 
 /**
- * Print the market type (bull, bear, or neutral) in quarterly periods based on the PCR.
+ * Print the market type (bull, bear, or neutral) in monthly periods based on the PCR.
  * @author George Ebeling
  */
 void MarketType_Monthly(const struct dataEntry *dataArr, const struct date *start, const struct date *end) {
@@ -330,7 +330,7 @@ void MarketType_Monthly(const struct dataEntry *dataArr, const struct date *star
         char yearString[3];
         _itoa_s((period).year, yearString, 3, 10);
 
-        printf("For the %d month of year 20%s, the market was %s (PCR: %.3f)\n", ((index+6) % modPeriod + 1), yearString,
+        printf("For the %2d month of year 20%s, the market was %s (PCR: %.3f)\n", ((index+6) % modPeriod + 1), yearString,
                (PCRs[index] > 1 ? "bear" : (PCRs[index] < 0.75 ? "bull" : "neutral")), PCRs[index]);
         fflush(stdout);
 
