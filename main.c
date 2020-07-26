@@ -95,6 +95,7 @@ char* toString_Date(struct date date);
 void DataToMonth(struct dataEntry data, struct date *date);
 void MarketType_SixMonthPeriod(const struct dataEntry *dataArr, const struct date *start, const struct date *end);
 void MarketType_Quarterly(const struct dataEntry *dataArr, const struct date *start, const struct date *end);
+void MarketType_Monthly(const struct dataEntry *dataArr, const struct date *start, const struct date *end);
 
 /* Global variables */
 int i = 0;
@@ -114,8 +115,9 @@ int main(){
     struct date start = {6, 7, 10};
     struct date end = {6, 8, 19};
 
-    MarketType_SixMonthPeriod(dataArr, &start, &end);
+//    MarketType_SixMonthPeriod(dataArr, &start, &end);
 //    MarketType_Quarterly(dataArr, &start, &end);
+    MarketType_Monthly(dataArr, &start, &end);
     return 0;
 }
 
@@ -268,6 +270,7 @@ void GetPCRForSubPeriods(struct date start, struct date end, double *PCRs, int m
 void MarketType_SixMonthPeriod(const struct dataEntry *dataArr, const struct date *start, const struct date *end) {
     double PCRs[19]; //found experimentally
     int periodLength = 6;
+    int modPeriod = 12 / periodLength;
     struct date period = *start;
 
     GetPCRForSubPeriods((*start), (*end), PCRs, periodLength, dataArr);
@@ -277,7 +280,7 @@ void MarketType_SixMonthPeriod(const struct dataEntry *dataArr, const struct dat
         char yearString[3];
         _itoa_s((period).year, yearString, 3, 10);
 
-        printf("For the %d half of year 20%s, the market was %s (PCR: %f)\n", ((index + 1) % 2 + 1), yearString,
+        printf("For the %d half of year 20%s, the market was %s (PCR: %f)\n", ((index + 1) % modPeriod + 1), yearString,
                (PCRs[index] > 1 ? "bear" : (PCRs[index] < 0.75 ? "bull" : "neutral")), PCRs[index]);
         fflush(stdout);
 
@@ -292,6 +295,7 @@ void MarketType_SixMonthPeriod(const struct dataEntry *dataArr, const struct dat
 void MarketType_Quarterly(const struct dataEntry *dataArr, const struct date *start, const struct date *end) {
     double PCRs[37]; //found experimentally
     int periodLength = 3;
+    int modPeriod = 12 / periodLength;
     struct date period = *start;
 
     GetPCRForSubPeriods((*start), (*end), PCRs, periodLength, dataArr);
@@ -301,7 +305,7 @@ void MarketType_Quarterly(const struct dataEntry *dataArr, const struct date *st
         char yearString[3];
         _itoa_s((period).year, yearString, 3, 10);
 
-        printf("For the %d quarter of year 20%s, the market was %s (PCR: %.3f)\n", ((index+2) % 4 + 1), yearString,
+        printf("For the %d quarter of year 20%s, the market was %s (PCR: %.3f)\n", ((index+2) % modPeriod + 1), yearString,
                (PCRs[index] > 1 ? "bear" : (PCRs[index] < 0.75 ? "bull" : "neutral")), PCRs[index]);
         fflush(stdout);
 
@@ -309,6 +313,30 @@ void MarketType_Quarterly(const struct dataEntry *dataArr, const struct date *st
     }
 }
 
+/**
+ * Print the market type (bull, bear, or neutral) in quarterly periods based on the PCR.
+ * @author George Ebeling
+ */
+void MarketType_Monthly(const struct dataEntry *dataArr, const struct date *start, const struct date *end) {
+    double PCRs[120]; //
+    int periodLength = 1;
+    int modPeriod = 12 / periodLength;
+    struct date period = *start;
+
+    GetPCRForSubPeriods((*start), (*end), PCRs, periodLength, dataArr);
+    int index = 0;
+    for(; CompareDate((period), (*end)) < 0; index++)
+    {
+        char yearString[3];
+        _itoa_s((period).year, yearString, 3, 10);
+
+        printf("For the %d month of year 20%s, the market was %s (PCR: %.3f)\n", ((index+6) % modPeriod + 1), yearString,
+               (PCRs[index] > 1 ? "bear" : (PCRs[index] < 0.75 ? "bull" : "neutral")), PCRs[index]);
+        fflush(stdout);
+
+        IncreaseMonth(&period, periodLength);
+    }
+}
 
 /**
  * Compare two dates
