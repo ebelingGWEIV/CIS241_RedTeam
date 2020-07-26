@@ -54,9 +54,6 @@ Notes:
 /* MARCOS */
 #define DECIMAL 46              // ASCii value for '.'
 #define NUMENTRIES 2331            // (2332 Total Lines) - (fisrt line) = 2331 Lines of data
-#define BEAR 1
-#define BULL -1
-#define NEUTRAL 0
 
 
 /* Variable order: Large -> Small for memory optimization */
@@ -91,7 +88,7 @@ void storeLine(double *lineOfData, struct dataEntry dataArr[NUMENTRIES]);
 
 int CompareDataToMonth(struct dataEntry data, struct date checkDate);
 int FindStartIndex(struct date start, struct dataEntry const dataArr[NUMENTRIES]);
-void GetMarketType(struct date start, struct date end, int types[], int monthIncrement, struct dataEntry const dataArr[NUMENTRIES]);
+void GetPCRForSubPeriods(struct date start, struct date end, double *PCRs, int monthIncrement, const struct dataEntry *dataArr);
 int CompareDate(struct date A, struct date B);
 void IncreaseMonth(struct date *dateToChange, int months);
 char* toString_Date(struct date date);
@@ -117,8 +114,8 @@ int main(){
     struct date start = {6, 7, 10};
     struct date end = {6, 8, 19};
 
-//    MarketType_SixMonthPeriod(dataArr, &start, &end);
-    MarketType_Quarterly(dataArr, &start, &end);
+    MarketType_SixMonthPeriod(dataArr, &start, &end);
+//    MarketType_Quarterly(dataArr, &start, &end);
     return 0;
 }
 
@@ -231,17 +228,17 @@ void storeLine(double *lineOfData, struct dataEntry dataArr[NUMENTRIES]){
  * Get the market type for over a given period.
  * Recommended for start.day == 0 and end.day == 31
  *
- * -1 for bear, +1 for bull, 0 for neutral/ignorable
+ * PCR > 1 ? BEAR : (PCR < 0.75 ? BULL : NEUTRAL
  * @author George Ebeling
  */
-void GetMarketType(struct date start, struct date end, int *types, int monthIncrement, struct dataEntry const dataArr[NUMENTRIES])
+void GetPCRForSubPeriods(struct date start, struct date end, double *PCRs, int monthIncrement, const struct dataEntry *dataArr)
 {
     //Start must be less than end
     if(CompareDate(start, end) >= 0) return;
 
 
     // loop through the entire time period given
-    for(int typeIndex = 0; -1 == CompareDate(start, end); IncreaseMonth(&start, monthIncrement), typeIndex++)
+    for(int PCRIndex = 0; -1 == CompareDate(start, end); IncreaseMonth(&start, monthIncrement), PCRIndex++)
     {
         // Find the starting index based on the start date
         int index = FindStartIndex(start, dataArr);
@@ -260,13 +257,7 @@ void GetMarketType(struct date start, struct date end, int *types, int monthIncr
         }
         double PCR = (double)numPut / (double)numCall;
 
-        // Set the market type for this period
-        /*
-         * PCR > 1 => bear
-         * PCR < 1 && PCR > 0.75 => neutral/ignorable
-         * PCR < 0.75 => bull
-         */
-        types[typeIndex] = (PCR > 1 ? BEAR : (PCR < 0.75 ? BULL : NEUTRAL));
+        PCRs[PCRIndex] = PCR;
     }
 }
 
@@ -275,19 +266,19 @@ void GetMarketType(struct date start, struct date end, int *types, int monthIncr
  * @author George Ebeling
  */
 void MarketType_SixMonthPeriod(const struct dataEntry *dataArr, const struct date *start, const struct date *end) {
-    int types[18]; //found experimentally
+    double PCRs[19]; //found experimentally
     int periodLength = 6;
     struct date period = *start;
 
-    GetMarketType((*start), (*end), types, periodLength, dataArr);
-
-    for(int index = 0; CompareDate((period), (*end)) < 0; index++)
+    GetPCRForSubPeriods((*start), (*end), PCRs, periodLength, dataArr);
+    int index = 0;
+    for( ;CompareDate((period), (*end)) < 0; index++)
     {
         char yearString[3];
         _itoa_s((period).year, yearString, 3, 10);
 
-        printf("For the %d half of year 20%s, the market was %s\n", ((index + 1) % 2 + 1), yearString,
-               (types[index] == BEAR ? "bear" : (types[index] == BULL ? "bull" : "neutral")));
+        printf("For the %d half of year 20%s, the market was %s (PCR: %f)\n", ((index + 1) % 2 + 1), yearString,
+               (PCRs[index] > 1 ? "bear" : (PCRs[index] < 0.75 ? "bull" : "neutral")), PCRs[index]);
         fflush(stdout);
 
         IncreaseMonth(&period, periodLength);
@@ -299,19 +290,19 @@ void MarketType_SixMonthPeriod(const struct dataEntry *dataArr, const struct dat
  * @author George Ebeling
  */
 void MarketType_Quarterly(const struct dataEntry *dataArr, const struct date *start, const struct date *end) {
-    int types[NUMENTRIES / 4];
+    double PCRs[37]; //found experimentally
     int periodLength = 3;
     struct date period = *start;
 
-    GetMarketType((*start), (*end), types, periodLength, dataArr);
+    GetPCRForSubPeriods((*start), (*end), PCRs, periodLength, dataArr);
 
     for(int index = 0; CompareDate((period), (*end)) < 0; index++)
     {
         char yearString[3];
         _itoa_s((period).year, yearString, 3, 10);
 
-        printf("For the %d quarter of year 20%s, the market was %s\n", ((index+2) % 4 + 1), yearString,
-                (types[index] == BEAR ? "bear" : (types[index] == BULL ? "bull" : "neutral")));
+        printf("For the %d quarter of year 20%s, the market was %s (PCR: %.3f)\n", ((index+2) % 4 + 1), yearString,
+               (PCRs[index] > 1 ? "bear" : (PCRs[index] < 0.75 ? "bull" : "neutral")), PCRs[index]);
         fflush(stdout);
 
         IncreaseMonth(&period, periodLength);
