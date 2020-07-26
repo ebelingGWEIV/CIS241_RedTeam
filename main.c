@@ -113,7 +113,7 @@ int main(){
     unsigned int dataArrSize = NUMENTRIES - 1;  // Location in the structure array of the last line of data
 
     /* Calculate the market type for different periods of time. The printf calls require different strings, so I made a couple different functiosn
-     * for periods of time that would be interesting. */
+     * for periods of time that would be interesting. -- George*/
     struct date start = {6, 7, 10};
     struct date end = {6, 8, 19};
 
@@ -272,6 +272,7 @@ void GetMarketType(struct date start, struct date end, int *types, int monthIncr
 
 /**
  * Print the market type (bull, bear, or neutral) in six month periods based on the PCR.
+ * @author George Ebeling
  */
 void MarketType_SixMonthPeriod(const struct dataEntry *dataArr, const struct date *start, const struct date *end) {
     int types[18]; //found experimentally
@@ -295,6 +296,7 @@ void MarketType_SixMonthPeriod(const struct dataEntry *dataArr, const struct dat
 
 /**
  * Print the market type (bull, bear, or neutral) in quarterly periods based on the PCR.
+ * @author George Ebeling
  */
 void MarketType_Quarterly(const struct dataEntry *dataArr, const struct date *start, const struct date *end) {
     int types[NUMENTRIES / 4];
@@ -366,6 +368,7 @@ void IncreaseMonth(struct date *dateToChange, int months)
 
 /**
  * Returns a string for printing the date in the format mm-dd-yy
+ * @author George Ebeling
  */
 char* toString_Date(struct date date)
 {
@@ -398,6 +401,7 @@ int CompareDataToMonth(struct dataEntry data, struct date checkDate)
 
 /**
  * Convert a data entry to a date struct.
+ * @author George Ebeling
  */
 void DataToMonth(struct dataEntry data, struct date *date)
 {
