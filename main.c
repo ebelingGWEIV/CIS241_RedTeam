@@ -88,8 +88,13 @@ void storeLine(double *lineOfData, struct dataEntry dataArr[NUMENTRIES]);
 int CompareDataToMonth(struct dataEntry data, struct date checkDate);
 int FindStartIndex(struct date start, struct dataEntry const dataArr[NUMENTRIES]);
 void GetMarketType(struct date start, struct date end, int types[], int monthIncrement, struct dataEntry const dataArr[NUMENTRIES]);
+int GetMarketType_SetType(int bull, int bear, int neutral);
 int CompareDate(struct date A, struct date B);
 void IncreaseMonth(struct date *dateToChange, int months);
+char* toString_Date(struct date date);
+void DataToMonth(struct dataEntry data, struct date *date);
+
+void MarketType_SixMonthPeriod(const struct dataEntry *dataArr, const int *types, struct date *start, struct date *end);
 
 /* Global variables */
 int i = 0;
@@ -104,31 +109,17 @@ int main(){
 
     unsigned int dataArrSize = NUMENTRIES - 1;  // Location in the structure array of the last line of data
 
-    // CONFIRM LAST LINE OF DATA  -> 10/4/19,2.32,1015727,437756,1453483
-//    printf("\nFinal line check:");
-//    printf("\n%d\t", dataArr[NUMENTRIES - 2].month);
-//    printf("%d\t",   dataArr[NUMENTRIES - 2].day);
-//    printf("%d\t",   dataArr[NUMENTRIES - 2].year);
-//    printf("%.2f\t", dataArr[NUMENTRIES - 2].ratio);
-//    printf("%.2f\t", dataArr[NUMENTRIES - 2].putVol);
-//    printf("%.2f\t", dataArr[NUMENTRIES - 2].callVol);
-//    printf("%.2f\t", dataArr[NUMENTRIES - 2].optVol);
-
-
     /* This is an example of how to use the functions I added. I'll be doing more with this later, but I have the core of it done and wanted you
      * guys to be able to use the helper methods I've created.*/
     int types[NUMENTRIES / 4];
     struct date start = {6, 7, 10};
-    struct date end = {4, 10, 19};
-    GetMarketType(start, end, types, 3, dataArr);
+    struct date end = {6, 8, 19};
 
-    for(int index = 0; index < NUMENTRIES / 4; index++)
-    {
-        printf("For %d quarter of year %d, the market was %s\n", ((index)%4 + 1), 0000, (types[index] == -1 ? "bear" : "bull"));
-    }
+    MarketType_SixMonthPeriod(dataArr, types, &start, &end);
 
     return 0;
 }
+
 
 
 /*************************************************************************************************************************
@@ -238,7 +229,7 @@ void storeLine(double *lineOfData, struct dataEntry dataArr[NUMENTRIES]){
  * Get the market type for over a given period.
  * Recommended for start.day == 0 and end.day == 31
  *
- * -1 for bear, +1 for bull
+ * -1 for bear, +1 for bull, 0 for neutral/ignorable
  * @author George Ebeling
  */
 void GetMarketType(struct date start, struct date end, int types[], int monthIncrement, struct dataEntry const dataArr[NUMENTRIES])
@@ -257,20 +248,65 @@ void GetMarketType(struct date start, struct date end, int types[], int monthInc
         struct date subPeriodEnd = start;
         IncreaseMonth(&subPeriodEnd, monthIncrement);
 
-        int bullCount = 0, bearCount = 0;
+        int bullCount = 0, bearCount = 0, neutralCount = 0;
 
         // loop through the sub period until the end of the sub period has been reached.
-        for(; CompareDataToMonth(dataArr[index], subPeriodEnd) < 0; index++)
+        for(; CompareDataToMonth(dataArr[index], subPeriodEnd) < 0 && index < NUMENTRIES; index++)
         {
             if(dataArr[index].ratio > 1)
                 bearCount++;
-            else
+            else if(dataArr[index].ratio < 0.75)
                 bullCount++;
+            else
+                neutralCount++;
+
         }
 
         // Set the market type for this period
-        //TODO if there are index out of bound errors, issue a memory check here before adding to the array
-        types[typeIndex] = (bearCount >= bullCount ? -1 : 1);
+        types[typeIndex] = GetMarketType_SetType(bullCount, bearCount, neutralCount);
+    }
+}
+
+/**
+ *  1 bull is greatest
+ * -1 bear is greatest
+ *  0 neutral is greatest
+ * @return
+ */
+int GetMarketType_SetType(int bull, int bear, int neutral)
+{
+    if(bull > bear)
+    {
+        if(bull > neutral) //bull is greatest
+            return 1;
+        else //(bull <= neutral) //neutral is greatest
+            return 0;
+    }
+    else if(bear > bull)
+    {
+        if(bear > neutral) return -1;
+        else //bear <= neutral //neutral is greatest
+            return 0;
+    }
+    else
+        return 0;
+}
+
+/**
+ * Print the market type (bull or bear) for six month periods.
+ */
+void MarketType_SixMonthPeriod(const struct dataEntry *dataArr, const int *types, struct date *start, struct date *end) {
+    int periodLength = 6;
+
+    GetMarketType((*start), (*end), types, periodLength, dataArr);
+
+    for(int index = 0; CompareDate((*start), (*end)) < 0; index++)
+    {
+        char yearString[3];
+        _itoa_s((*start).year, yearString, 3, 10);
+        printf("For the %d half of year 20%s, the market was %s\n", ((index+1)%2 + 1), yearString, (types[index] == -1 ? "bear" : types[index] == 1 ?
+        "bull" : "neutral"));
+        IncreaseMonth(start, periodLength);
     }
 }
 
@@ -310,6 +346,7 @@ int CompareDate(struct date A, struct date B)
  * @param months
  * @author George Ebeling
  */
+//It was giving me trouble where it wasn't properly changing the month, so I modified the arguments to accept a pointer to the struct.
 void IncreaseMonth(struct date *dateToChange, int months)
 {
     dateToChange->month += months;
@@ -321,6 +358,23 @@ void IncreaseMonth(struct date *dateToChange, int months)
     }
 }
 
+/**
+ * Returns a string for printing the date in the format mm-dd-yy
+ */
+char* toString_Date(struct date date)
+{
+    char monthString[3];
+    _itoa_s(date.month, monthString, 3, 10);
+    char dayString[3];
+    _itoa_s(date.day, dayString, 3, 10);
+    char yearString[3];
+    _itoa_s(date.year, yearString, 3, 10);
+    char dateString[9];
+    sprintf(dateString, "%s-%s-%s", monthString, dayString, yearString);
+    return dateString;
+
+
+}
 
 /**
  * Compares the given dataEntry struct to the given checkData using CompareDate().
@@ -331,8 +385,19 @@ void IncreaseMonth(struct date *dateToChange, int months)
  */
 int CompareDataToMonth(struct dataEntry data, struct date checkDate)
 {
-    struct date dataDate = {data.day, data.month, data.year};
+    struct date dataDate;
+    DataToMonth(data, &dataDate);
     return CompareDate(dataDate, checkDate);
+}
+
+/**
+ * Convert a data entry to a date struct.
+ */
+void DataToMonth(struct dataEntry data, struct date *date)
+{
+    date->month = data.month;
+    date->day = data.day;
+    date->year = data.year;
 }
 
 /**
