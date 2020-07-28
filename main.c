@@ -2,46 +2,46 @@
 Title:     Group Project - "Data Mining"
 
 Authors: George Ebeling
-         Brendon Dalm
-         Tyler Redding
-         Tyler Freeman
-         Corey Moura
+        Brendon Dalm
+        Tyler Redding
+        Tyler Freeman
+        Corey Moura
 
 Class:   CIS241
 Date:     7/31/2020
 Prof:     Dr. Vijay Bhuse
 
 Description:     Write a C program to read in the market data from the text file and draw some
-                statistical conclusions from the data. There are no obvious right or wrong answers.
-                Your grade depends on:
+               statistical conclusions from the data. There are no obvious right or wrong answers.
+               Your grade depends on:
 
-                    Following items are to be included in your report:
-                    •    Source code
-                    •    Output supporting conclusions drawn
-                    •    Video demo
-                    •    Report citing contributions of team members
+                   Following items are to be included in your report:
+                   •    Source code
+                   •    Output supporting conclusions drawn
+                   •    Video demo
+                   •    Report citing contributions of team members
 
 
 Notes:
-        PROGRAM NOTES:
-            DECLARE THE STRUCTURE BEFORE THE FUNCTIONS
-            Line count using terminal: wc -l marketData.txt -> determines MACRO NUMENTRIES
+       PROGRAM NOTES:
+           DECLARE THE STRUCTURE BEFORE THE FUNCTIONS
+           Line count using terminal: wc -l marketData.txt -> determines MACRO NUMENTRIES
 
-            Function Flow:
-                Main > importFile >    advanceCursor >  REPEATS: extractLine > formatLine > storeLine
+           Function Flow:
+               Main > importFile >    advanceCursor >  REPEATS: extractLine > formatLine > storeLine
 
-            Data Flow:
-                .txt File > imported one line at a time as strings > extract nums from strings...
-                and convert to doubles > Store each line of data into the structure array
+           Data Flow:
+               .txt File > imported one line at a time as strings > extract nums from strings...
+               and convert to doubles > Store each line of data into the structure array
 
-                    -> Structure array (dataArr) conatins all of the data
+                   -> Structure array (dataArr) conatins all of the data
 
-        PUT / CALL NOTES:
-            The data is a weekly representation of total puts and calls.
+       PUT / CALL NOTES:
+           The data is a weekly representation of total puts and calls.
 
-            Putt/Call Ratio = (putVolume /  callVolume)
-                A falling put-call ratio below .7 and approaching .5, is considered a bullish indicator
-                A rising put-call ratio greater than .7 or exceeding 1, is considered a bearish indicator
+           Putt/Call Ratio = (putVolume /  callVolume)
+               A falling put-call ratio below .7 and approaching .5, is considered a bullish indicator
+               A rising put-call ratio greater than .7 or exceeding 1, is considered a bearish indicator
 
 ********************************************************************************************************/
 
@@ -69,10 +69,10 @@ struct dataEntry{
 };
 
 /* Used for queries over a specific period of time
- *
- * January is 1
- * First of the month is 1
- * */
+*
+* January is 1
+* First of the month is 1
+* */
 struct date {
     unsigned int day : 5;
     unsigned int month : 4;
@@ -86,6 +86,7 @@ void parseLineToDouble(char *buff, double *numberArr);
 void formatLine(char *tempArr);
 void storeLine(double *lineOfData, struct dataEntry dataArr[NUMENTRIES]);
 
+char *GetTypeString(double PCR);
 int CompareDataToMonth(struct dataEntry data, struct date checkDate);
 int FindStartIndex(struct date start, struct dataEntry const dataArr[NUMENTRIES]);
 void GetPCRForSubPeriods(struct date start, struct date end, double *PCRs, int monthIncrement, const struct dataEntry *dataArr);
@@ -110,14 +111,15 @@ int main(){
 
     unsigned int dataArrSize = NUMENTRIES - 1;  // Location in the structure array of the last line of data
 
-    /* Calculate the market type for different periods of time. The printf calls require different strings, so I made a couple different functiosn
+    /* Calculate the market type for different periods of time. The printf calls require different strings, so I made a couple different functions
      * for periods of time that would be interesting. -- George*/
     struct date start = {6, 7, 10};
     struct date end = {6, 8, 19};
 
 //    MarketType_SixMonthPeriod(dataArr, &start, &end);
-//    MarketType_Quarterly(dataArr, &start, &end);
-    MarketType_Monthly(dataArr, &start, &end);
+    MarketType_Quarterly(dataArr, &start, &end);
+//    MarketType_Monthly(dataArr, &start, &end);
+
     return 0;
 }
 
@@ -226,13 +228,11 @@ void storeLine(double *lineOfData, struct dataEntry dataArr[NUMENTRIES]){
 }
 
 
-/**
- * Get the market type for over a given period.
- * Recommended for start.day == 0 and end.day == 31
- *
- * PCR > 1 ? BEAR : (PCR < 0.75 ? BULL : NEUTRAL
- * @author George Ebeling
- */
+/*************************************************************************************************************************
+* Get the market type for over a given period.
+* Recommended: start.day == 0 and end.day == 31
+* @author George Ebeling
+*************************************************************************************************************************/
 void GetPCRForSubPeriods(struct date start, struct date end, double *PCRs, int monthIncrement, const struct dataEntry *dataArr)
 {
     //Start must be less than end
@@ -263,10 +263,18 @@ void GetPCRForSubPeriods(struct date start, struct date end, double *PCRs, int m
     }
 }
 
-/**
- * Print the market type (bull, bear, or neutral) in six month periods based on the PCR.
- * @author George Ebeling
- */
+/*************************************************************************************************************************
+ * Returns a string for the market type given a put call ratio
+ *************************************************************************************************************************/
+char *GetTypeString(double PCR)
+{
+    return PCR > 1 ? "bear" : (PCR < 0.75 ? "bull" : "neutral");
+}
+
+/*************************************************************************************************************************
+* Print the market type (bull, bear, or neutral) in six month periods based on the PCR.
+* @author George Ebeling
+*************************************************************************************************************************/
 void MarketType_SixMonthPeriod(const struct dataEntry *dataArr, const struct date *start, const struct date *end) {
     double PCRs[19]; //found experimentally
     int periodLength = 6;
@@ -277,21 +285,19 @@ void MarketType_SixMonthPeriod(const struct dataEntry *dataArr, const struct dat
     int index = 0;
     for( ;CompareDate((period), (*end)) < 0; index++)
     {
-        char yearString[3];
-        _itoa_s((period).year, yearString, 3, 10);
 
-        printf("For the %d half of year 20%s, the market was %s (PCR: %f)\n", ((index + 1) % modPeriod + 1), yearString,
-               (PCRs[index] > 1 ? "bear" : (PCRs[index] < 0.75 ? "bull" : "neutral")), PCRs[index]);
+        printf("For the %d half of year 20%s, the market was %s (PCR: %f)\n", ((index + 1) % modPeriod + 1), period.year,
+               GetTypeString(PCRs[index]), PCRs[index]);
         fflush(stdout);
 
         IncreaseMonth(&period, periodLength);
     }
 }
 
-/**
- * Print the market type (bull, bear, or neutral) in quarterly periods based on the PCR.
- * @author George Ebeling
- */
+/*************************************************************************************************************************
+* Print the market type (bull, bear, or neutral) in quarterly periods based on the PCR.
+* @author George Ebeling
+*************************************************************************************************************************/
 void MarketType_Quarterly(const struct dataEntry *dataArr, const struct date *start, const struct date *end) {
     double PCRs[37]; //found experimentally
     int periodLength = 3;
@@ -302,21 +308,19 @@ void MarketType_Quarterly(const struct dataEntry *dataArr, const struct date *st
 
     for(int index = 0; CompareDate((period), (*end)) < 0; index++)
     {
-        char yearString[3];
-        _itoa_s((period).year, yearString, 3, 10);
 
-        printf("For the %d quarter of year 20%s, the market was %s (PCR: %.3f)\n", ((index+2) % modPeriod + 1), yearString,
-               (PCRs[index] > 1 ? "bear" : (PCRs[index] < 0.75 ? "bull" : "neutral")), PCRs[index]);
+        printf("For the %d quarter of year 20%d, the market was %s (PCR: %.3f)\n", ((index+2) % modPeriod + 1), period.year,
+               GetTypeString(PCRs[index]), PCRs[index]);
         fflush(stdout);
 
         IncreaseMonth(&period, periodLength);
     }
 }
 
-/**
- * Print the market type (bull, bear, or neutral) in monthly periods based on the PCR.
- * @author George Ebeling
- */
+/*************************************************************************************************************************
+* Print the market type (bull, bear, or neutral) in monthly periods based on the PCR.
+* @author George Ebeling
+*************************************************************************************************************************/
 void MarketType_Monthly(const struct dataEntry *dataArr, const struct date *start, const struct date *end) {
     double PCRs[120]; //
     int periodLength = 1;
@@ -327,22 +331,20 @@ void MarketType_Monthly(const struct dataEntry *dataArr, const struct date *star
     int index = 0;
     for(; CompareDate((period), (*end)) < 0; index++)
     {
-        char yearString[3];
-        _itoa_s((period).year, yearString, 3, 10);
 
-        printf("For the %2d month of year 20%s, the market was %s (PCR: %.3f)\n", ((index+6) % modPeriod + 1), yearString,
-               (PCRs[index] > 1 ? "bear" : (PCRs[index] < 0.75 ? "bull" : "neutral")), PCRs[index]);
+        printf("For the %2d month of year 20%s, the market was %s (PCR: %.3f)\n", ((index+6) % modPeriod + 1), period.year,
+               GetTypeString(PCRs[index]), PCRs[index]);
         fflush(stdout);
 
         IncreaseMonth(&period, periodLength);
     }
 }
 
-/**
- * Compare two dates
- * @return 1 if A>B, -1 if A<B, 0 if A==B
- * @author George Ebeling
- */
+/*************************************************************************************************************************
+* Compare two dates
+* @return 1 if A>B, -1 if A<B, 0 if A==B
+* @author George Ebeling
+*************************************************************************************************************************/
 int CompareDate(struct date A, struct date B)
 {
     if(A.year > B.year)
@@ -350,13 +352,13 @@ int CompareDate(struct date A, struct date B)
     else if(B.year > A.year)
         return -1;
     else
-        {
+    {
         if(A.month > B.month)
             return 1;
         else if(B.month > A.month)
             return -1;
         else
-            {
+        {
             if(A.day > B.day)
                 return 1;
             else if(B.day > A.day)
@@ -367,12 +369,13 @@ int CompareDate(struct date A, struct date B)
     }
 }
 
-/**
- * Safely incrase the month. If the month was increase passed december, increase the year and decrease the months until a valid date has been found.
- * @param dateToChange
- * @param months
- * @author George Ebeling
- */
+/*************************************************************************************************************************
+* Safely incrase the month. If the month was increase passed december, increase the year and decrease the months until a
+* valid date has been found.
+* @param dateToChange
+* @param months
+* @author George Ebeling
+*************************************************************************************************************************/
 //It was giving me trouble where it wasn't properly changing the month, so I modified the arguments to accept a pointer to the struct.
 void IncreaseMonth(struct date *dateToChange, int months)
 {
@@ -385,10 +388,10 @@ void IncreaseMonth(struct date *dateToChange, int months)
     }
 }
 
-/**
- * Returns a string for printing the date in the format mm-dd-yy
- * @author George Ebeling
- */
+/*************************************************************************************************************************
+* Returns a string for printing the date in the format mm-dd-yy
+* @author George Ebeling
+*************************************************************************************************************************/
 char* toString_Date(struct date date)
 {
     char monthString[3];
@@ -404,13 +407,13 @@ char* toString_Date(struct date date)
 
 }
 
-/**
- * Compares the given dataEntry struct to the given checkData using CompareDate().
- * @param data Of type struct dataEntry
- * @param checkDate Of type struct date
- * @return CompareDate(dataEntry, checkDate)
- * @author George Ebeling
- */
+/*************************************************************************************************************************
+* Compares the given dataEntry struct to the given checkData using CompareDate().
+* @param data Of type struct dataEntry
+* @param checkDate Of type struct date
+* @return CompareDate(dataEntry, checkDate)
+* @author George Ebeling
+*************************************************************************************************************************/
 int CompareDataToMonth(struct dataEntry data, struct date checkDate)
 {
     struct date dataDate;
@@ -418,10 +421,10 @@ int CompareDataToMonth(struct dataEntry data, struct date checkDate)
     return CompareDate(dataDate, checkDate);
 }
 
-/**
- * Convert a data entry to a date struct.
- * @author George Ebeling
- */
+/*************************************************************************************************************************
+* Convert a data entry to a date struct.
+* @author George Ebeling
+*************************************************************************************************************************/
 void DataToMonth(struct dataEntry data, struct date *date)
 {
     date->month = data.month;
@@ -429,10 +432,10 @@ void DataToMonth(struct dataEntry data, struct date *date)
     date->year = data.year;
 }
 
-/**
- * Finds which index of dataArr contains where to begin to match the start date.
- * @author George Ebeling
- */
+/*************************************************************************************************************************
+* Finds which index of dataArr contains where to begin to match the start date.
+* @author George Ebeling
+*************************************************************************************************************************/
 int FindStartIndex(struct date start, struct dataEntry const dataArr[NUMENTRIES])
 {
     int index = 0;
