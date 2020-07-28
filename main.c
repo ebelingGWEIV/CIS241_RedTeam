@@ -158,7 +158,7 @@ void importFile(struct dataEntry dataArr[NUMENTRIES]){
 
 
 /*************************************************************************************************************************
-* ADVANCE THE CURSOR:  The begining of the text file has column titles which are not part of the data.  This will move
+* ADVANCE THE CURSOR:  The beginning of the text file has column titles which are not part of the data.  This will move
 * the cursor (file pointer fp) to the end of the first line of data.
 *************************************************************************************************************************/
 void advanceCurserToData(char *buff, FILE *fp){
@@ -264,8 +264,8 @@ void GetPCRForSubPeriods(struct date start, struct date end, double *PCRs, int m
 }
 
 /*************************************************************************************************************************
- * Returns a string for the market type given a put call ratio
- *************************************************************************************************************************/
+* Returns a string for the market type given a put call ratio
+*************************************************************************************************************************/
 char *GetTypeString(double PCR)
 {
     return PCR > 1 ? "bear" : (PCR < 0.75 ? "bull" : "neutral");
@@ -282,8 +282,8 @@ void MarketType_SixMonthPeriod(const struct dataEntry *dataArr, const struct dat
     struct date period = *start;
 
     GetPCRForSubPeriods((*start), (*end), PCRs, periodLength, dataArr);
-    int index = 0;
-    for( ;CompareDate((period), (*end)) < 0; index++)
+
+    for( int index = 0; CompareDate((period), (*end)) < 0; index++)
     {
 
         printf("For the %d half of year 20%s, the market was %s (PCR: %f)\n", ((index + 1) % modPeriod + 1), period.year,
@@ -328,8 +328,8 @@ void MarketType_Monthly(const struct dataEntry *dataArr, const struct date *star
     struct date period = *start;
 
     GetPCRForSubPeriods((*start), (*end), PCRs, periodLength, dataArr);
-    int index = 0;
-    for(; CompareDate((period), (*end)) < 0; index++)
+
+    for( int index = 0; CompareDate((period), (*end)) < 0; index++)
     {
 
         printf("For the %2d month of year 20%s, the market was %s (PCR: %.3f)\n", ((index+6) % modPeriod + 1), period.year,
@@ -370,7 +370,7 @@ int CompareDate(struct date A, struct date B)
 }
 
 /*************************************************************************************************************************
-* Safely incrase the month. If the month was increase passed december, increase the year and decrease the months until a
+* Safely increase the month. If the month was increase passed december, increase the year and decrease the months until a
 * valid date has been found.
 * @param dateToChange
 * @param months
@@ -445,4 +445,7 @@ int FindStartIndex(struct date start, struct dataEntry const dataArr[NUMENTRIES]
 
     return index;
 }
+
+
+
 
