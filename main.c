@@ -114,7 +114,7 @@ int main(){
     /* Calculate the market type for different periods of time. The printf calls require different strings, so I made a couple different functions
      * for periods of time that would be interesting. -- George*/
     struct date start = {6, 7, 10};
-    struct date end = {6, 8, 19};
+    struct date end = {4, 10, 19};
 
 //    MarketType_SixMonthPeriod(dataArr, &start, &end);
     MarketType_Quarterly(dataArr, &start, &end);
@@ -230,7 +230,6 @@ void storeLine(double *lineOfData, struct dataEntry dataArr[NUMENTRIES]){
 
 /*************************************************************************************************************************
 * Get the market type for over a given period.
-* Recommended: start.day == 0 and end.day == 31
 * @author George Ebeling
 *************************************************************************************************************************/
 void GetPCRForSubPeriods(struct date start, struct date end, double *PCRs, int monthIncrement, const struct dataEntry *dataArr)
@@ -376,7 +375,6 @@ int CompareDate(struct date A, struct date B)
 * @param months
 * @author George Ebeling
 *************************************************************************************************************************/
-//It was giving me trouble where it wasn't properly changing the month, so I modified the arguments to accept a pointer to the struct.
 void IncreaseMonth(struct date *dateToChange, int months)
 {
     dateToChange->month += months;
