@@ -230,6 +230,7 @@ void storeLine(double *lineOfData, struct dataEntry dataArr[NUMENTRIES]){
 
 /*************************************************************************************************************************
 * Get the market type for over a given period.
+ * Requires an update if it is desired for the end date to be something other than the end date of the data.
 * @author George Ebeling
 *************************************************************************************************************************/
 void GetPCRForSubPeriods(struct date start, struct date end, double *PCRs, int monthIncrement, const struct dataEntry *dataArr)
@@ -251,6 +252,8 @@ void GetPCRForSubPeriods(struct date start, struct date end, double *PCRs, int m
         long int numPut = 0, numCall = 0;
 
         // loop through the sub period until the end of the sub period has been reached.
+        /* TODO If this function is going to be used for an End that is not the end of the data, then the exit condition of this loop will nee to be
+         * updated.*/
         for(; CompareDataToMonth(dataArr[index], subPeriodEnd) < 0 && index < NUMENTRIES - 1; index++)
         {
             numCall += dataArr[index].callVol;
@@ -267,7 +270,12 @@ void GetPCRForSubPeriods(struct date start, struct date end, double *PCRs, int m
 *************************************************************************************************************************/
 char *GetTypeString(double PCR)
 {
-    return PCR > 1 ? "bear" : (PCR < 0.75 ? "bull" : "neutral");
+    if(PCR > 1)
+        return "bear";
+    else if(PCR < 0.75)
+        return "bull";
+    else
+        return "neutral";
 }
 
 /*************************************************************************************************************************
