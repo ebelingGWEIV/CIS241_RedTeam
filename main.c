@@ -55,7 +55,8 @@ Notes:
 /* MARCOS */
 #define DECIMAL 46              // ASCii value for '.'
 #define NUMENTRIES 2331            // (2332 Total Lines) - (fisrt line) = 2331 Lines of data
-
+#define QUARTERSPLITSIZE 11
+#define MONTHSPLITSIZE 11
 
 /* Variable order: Large -> Small for memory optimization */
 struct dataEntry{
@@ -99,10 +100,14 @@ void MarketType_SixMonthPeriod(const struct dataEntry *dataArr, const struct dat
 void MarketType_Quarterly(const struct dataEntry *dataArr, const struct date *start, const struct date *end);
 void MarketType_Monthly(const struct dataEntry *dataArr, const struct date *start, const struct date *end);
 
-void SplitIntoQuarterSet(double PCR[], double firstQ[], double secondQ[], double thirdQ[], double fourthQ[], int size);
+void SplitIntoMonthsSet(const double PCR[], double months[12][MONTHSPLITSIZE], int size);
+void SplitIntoQuarterSet(const double PCR[], double splits[4][QUARTERSPLITSIZE], int size);
 double Mean_PCR(double *data);
 double CalculateStandardDeviation_PCR(double *data, int size);
 double CalculateVariance_PCR(double *data, int size);
+
+void QuarterlyStatistics_StdandVar(const double *PCRs, int size);
+void MonthlyStatistics_StdandVar(const double *PCRs, int size);
 
 /* Global variables */
 int i = 0;
@@ -125,8 +130,6 @@ int main(){
 //    MarketType_SixMonthPeriod(dataArr, &start, &end);
     MarketType_Quarterly(dataArr, &start, &end);
 //    MarketType_Monthly(dataArr, &start, &end);
-
-
 
     return 0;
 }
@@ -314,8 +317,7 @@ void MarketType_SixMonthPeriod(const struct dataEntry *dataArr, const struct dat
 * @author George Ebeling
 *************************************************************************************************************************/
 void MarketType_Quarterly(const struct dataEntry *dataArr, const struct date *start, const struct date *end) {
-    #define SIZE 37//found experimentally
-    double PCRs[SIZE];
+    double PCRs[37];
     int periodLength = 3;
     int modPeriod = 12 / periodLength;
     struct date period = *start;
@@ -332,20 +334,27 @@ void MarketType_Quarterly(const struct dataEntry *dataArr, const struct date *st
         IncreaseMonth(&period, periodLength);
     }
 
-    double firstQ[SIZE], secQ[SIZE], thirQ[SIZE], fourQ[SIZE];
-    SplitIntoQuarterSet(PCRs, firstQ, secQ, thirQ, fourQ, SIZE);
-    double var1 = CalculateVariance_PCR(firstQ, SIZE);
-    double std1 = CalculateStandardDeviation_PCR(firstQ, SIZE);
-    double var2 = CalculateVariance_PCR(secQ, SIZE);
-    double std2 = CalculateStandardDeviation_PCR(secQ, SIZE);
-    double var3 = CalculateVariance_PCR(thirQ, SIZE);
-    double std3 = CalculateStandardDeviation_PCR(thirQ, SIZE);
-    double var4 = CalculateVariance_PCR(fourQ, SIZE);
-    double std4 = CalculateStandardDeviation_PCR(fourQ, SIZE);
-    printf("\nvariance of 1st quarter = %f\tstandard dev of 1st = %f\n", var1, std1);
-    printf("variance of 2nd quarter = %f\tstandard dev of 2nd = %f\n", var2, std2);
-    printf("variance of 3rd quarter = %f\tstandard dev of 3rd = %f\n", var3, std3);
-    printf("variance of 4th quarter = %f\tstandard dev of 4th = %f\n", var4, std4);
+    QuarterlyStatistics_StdandVar(PCRs, 37);
+}
+
+/**
+ * Print the variance and the standard deviation of each quarter.
+ * @author George Ebeling
+ */
+void QuarterlyStatistics_StdandVar(const double *PCRs, int pcrsize) {
+    double quarters[4][QUARTERSPLITSIZE];
+    SplitIntoQuarterSet(PCRs, quarters, pcrsize);
+    double vari[4];
+    double std[4];
+
+    for(int index = 0; index < 4; index++)
+        std[index] = CalculateStandardDeviation_PCR(quarters[index], pcrsize);
+
+    for(int index = 0; index < 4; index++)
+        vari[index] = CalculateVariance_PCR(quarters[index], pcrsize);
+
+    for(int index = 0; index < 4; index++)
+        printf("\nvariance of %d quarter = %f\tstandard dev = %f\n", index, vari[index], std[index]);
 }
 
 /*************************************************************************************************************************
@@ -353,7 +362,7 @@ void MarketType_Quarterly(const struct dataEntry *dataArr, const struct date *st
 * @author George Ebeling
 *************************************************************************************************************************/
 void MarketType_Monthly(const struct dataEntry *dataArr, const struct date *start, const struct date *end) {
-    double PCRs[120]; //
+    double PCRs[111]; //
     int periodLength = 1;
     int modPeriod = 12 / periodLength;
     struct date period = *start;
@@ -363,12 +372,33 @@ void MarketType_Monthly(const struct dataEntry *dataArr, const struct date *star
     for( int index = 0; CompareDate((period), (*end)) < 0; index++)
     {
 
-        printf("For the %2d month of year 20%s, the market was %s (PCR: %.3f)\n", ((index+6) % modPeriod + 1), period.year,
+        printf("For the %d month of year 20%d, the market was %s (PCR: %.3f)\n", ((index+6) % modPeriod + 1), period.year,
                GetTypeString(PCRs[index]), PCRs[index]);
         fflush(stdout);
 
         IncreaseMonth(&period, periodLength);
     }
+    MonthlyStatistics_StdandVar(PCRs, 111);
+}
+
+/**
+ * Print the variance and the standard deviation of each quarter.
+ * @author George Ebeling
+ */
+void MonthlyStatistics_StdandVar(const double *PCRs, int size) {
+    double months[12][QUARTERSPLITSIZE];
+    SplitIntoMonthsSet(PCRs, months, size);
+    double vari[12];
+    double std[12];
+
+    for(int index = 0; index < 12; index++)
+        std[index] = CalculateStandardDeviation_PCR(months[index], size);
+
+    for(int index = 0; index < 12; index++)
+        vari[index] = CalculateVariance_PCR(months[index], size);
+
+    for(int index = 0; index < 12; index++)
+        printf("variance of %2d month = %f\t\tstandard dev = %f\n", index+1, vari[index], std[index]);
 }
 
 /*************************************************************************************************************************
@@ -476,21 +506,43 @@ int FindStartIndex(struct date start, struct dataEntry const dataArr[NUMENTRIES]
     return index;
 }
 
-
 /**
- * Splits the PCR information into quarterly data sets
- * @param PCR Array of PCR data where the first entry is four the third quarter.
+ * Splits the monthly PCR information into arrays for each month.
+ * @param PCR Put call information for each month in calendar order (Jan, Feb, ... , Dec, Jan)
+ * @param months A two dimensional array of the dimensions 12xMONTHSPLITSIZE
+ * @param size The size of the PCR array
  */
-void SplitIntoQuarterSet(double PCR[], double firstQ[], double secondQ[], double thirdQ[], double fourthQ[], int size)
+void SplitIntoMonthsSet(const double PCR[], double months[12][MONTHSPLITSIZE], int size)
 {
     //this is designed to intentionally loop past the end of the array so that a 0 is inserted after the data. The PCR can only be zero if there
     // were no Puts over the given period, which is extremely improbable. So using zero as the marker is safe.
-    for(int splitIndex = 0, index = 0; index <= size + 4; index+=4, splitIndex++)
+    for(int index = 0, pcrindex = 0; index < MONTHSPLITSIZE; index ++)
     {
-        firstQ[splitIndex]  = (index < size)     ? PCR[index]     : '\0';
-        secondQ[splitIndex] = (index + 1 < size) ? PCR[index + 1] : '\0';
-        thirdQ[splitIndex]  = (index + 2 < size) ? PCR[index + 2] : '\0';
-        fourthQ[splitIndex] = (index + 3 < size) ? PCR[index + 3] : '\0';
+        for(int splitIndex = 0; splitIndex < 12; splitIndex ++, pcrindex++)
+        {
+            months[splitIndex][index] = (pcrindex < size) ? PCR[pcrindex] : '\0';
+        }
+    }
+}
+
+
+/**
+ * Splits the monthly PCR information into arrays for each quarter.
+ * @param PCR Put call information for each month in calendar order (Q1, Q2, Q3, Q4, Q1, ...)
+ * @param splits A two dimensional array of the dimensions 3xQUARTERSPLITSIZE
+ * @param size The size of the PCR array
+ *
+ */
+void SplitIntoQuarterSet(const double PCR[], double splits[4][QUARTERSPLITSIZE], int size)
+{
+    //this is designed to intentionally loop past the end of the array so that a 0 is inserted after the data. The PCR can only be zero if there
+    // were no Puts over the given period, which is extremely improbable. So using zero as the marker is safe.
+    for(int index = 0, pcrindex = 0; index < QUARTERSPLITSIZE; index ++)
+    {
+        for(int splitIndex = 0; splitIndex < 4; splitIndex ++, pcrindex++)
+        {
+            splits[splitIndex][index] = (pcrindex < size) ? PCR[pcrindex] : '\0';
+        }
     }
 }
 
