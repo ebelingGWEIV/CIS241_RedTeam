@@ -511,6 +511,7 @@ int FindStartIndex(struct date start, struct dataEntry const dataArr[NUMENTRIES]
  * @param PCR Put call information for each month in calendar order (Jan, Feb, ... , Dec, Jan)
  * @param months A two dimensional array of the dimensions 12xMONTHSPLITSIZE
  * @param size The size of the PCR array
+ * @author George Ebeling
  */
 void SplitIntoMonthsSet(const double PCR[], double months[12][MONTHSPLITSIZE], int size)
 {
@@ -531,7 +532,7 @@ void SplitIntoMonthsSet(const double PCR[], double months[12][MONTHSPLITSIZE], i
  * @param PCR Put call information for each month in calendar order (Q1, Q2, Q3, Q4, Q1, ...)
  * @param splits A two dimensional array of the dimensions 3xQUARTERSPLITSIZE
  * @param size The size of the PCR array
- *
+ * @author George Ebeling
  */
 void SplitIntoQuarterSet(const double PCR[], double splits[4][QUARTERSPLITSIZE], int size)
 {
@@ -549,6 +550,7 @@ void SplitIntoQuarterSet(const double PCR[], double splits[4][QUARTERSPLITSIZE],
 /**
  * Calculates the variance for a given array of integers
  * @return variance of the data set
+ * @author George Ebeling
  */
 double CalculateVariance_PCR(double *data, int size)
 {
@@ -560,6 +562,7 @@ double CalculateVariance_PCR(double *data, int size)
 /**
  * Calculates the standard deviation for a given array of integers
  * @return standard deviation of the data set
+ * @author George Ebeling
  */
 double CalculateStandardDeviation_PCR(double *data, int size)
 {
