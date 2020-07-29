@@ -50,6 +50,7 @@ Notes:
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
+#include <math.h>
 
 /* MARCOS */
 #define DECIMAL 46              // ASCii value for '.'
@@ -98,6 +99,11 @@ void MarketType_SixMonthPeriod(const struct dataEntry *dataArr, const struct dat
 void MarketType_Quarterly(const struct dataEntry *dataArr, const struct date *start, const struct date *end);
 void MarketType_Monthly(const struct dataEntry *dataArr, const struct date *start, const struct date *end);
 
+void SplitIntoQuarterSet(double PCR[], double firstQ[], double secondQ[], double thirdQ[], double fourthQ[], int size);
+double Mean_PCR(double *data);
+double CalculateStandardDeviation_PCR(double *data, int size);
+double CalculateVariance_PCR(double *data, int size);
+
 /* Global variables */
 int i = 0;
 int logNum = 0;
@@ -119,6 +125,8 @@ int main(){
 //    MarketType_SixMonthPeriod(dataArr, &start, &end);
     MarketType_Quarterly(dataArr, &start, &end);
 //    MarketType_Monthly(dataArr, &start, &end);
+
+
 
     return 0;
 }
@@ -306,7 +314,8 @@ void MarketType_SixMonthPeriod(const struct dataEntry *dataArr, const struct dat
 * @author George Ebeling
 *************************************************************************************************************************/
 void MarketType_Quarterly(const struct dataEntry *dataArr, const struct date *start, const struct date *end) {
-    double PCRs[37]; //found experimentally
+    #define SIZE 37//found experimentally
+    double PCRs[SIZE];
     int periodLength = 3;
     int modPeriod = 12 / periodLength;
     struct date period = *start;
@@ -322,6 +331,21 @@ void MarketType_Quarterly(const struct dataEntry *dataArr, const struct date *st
 
         IncreaseMonth(&period, periodLength);
     }
+
+    double firstQ[SIZE], secQ[SIZE], thirQ[SIZE], fourQ[SIZE];
+    SplitIntoQuarterSet(PCRs, firstQ, secQ, thirQ, fourQ, SIZE);
+    double var1 = CalculateVariance_PCR(firstQ, SIZE);
+    double std1 = CalculateStandardDeviation_PCR(firstQ, SIZE);
+    double var2 = CalculateVariance_PCR(secQ, SIZE);
+    double std2 = CalculateStandardDeviation_PCR(secQ, SIZE);
+    double var3 = CalculateVariance_PCR(thirQ, SIZE);
+    double std3 = CalculateStandardDeviation_PCR(thirQ, SIZE);
+    double var4 = CalculateVariance_PCR(fourQ, SIZE);
+    double std4 = CalculateStandardDeviation_PCR(fourQ, SIZE);
+    printf("\nvariance of 1st quarter = %f\tstandard dev of 1st = %f\n", var1, std1);
+    printf("variance of 2nd quarter = %f\tstandard dev of 2nd = %f\n", var2, std2);
+    printf("variance of 3rd quarter = %f\tstandard dev of 3rd = %f\n", var3, std3);
+    printf("variance of 4th quarter = %f\tstandard dev of 4th = %f\n", var4, std4);
 }
 
 /*************************************************************************************************************************
@@ -453,5 +477,74 @@ int FindStartIndex(struct date start, struct dataEntry const dataArr[NUMENTRIES]
 }
 
 
+/**
+ * Splits the PCR information into quarterly data sets
+ * @param PCR Array of PCR data where the first entry is four the third quarter.
+ */
+void SplitIntoQuarterSet(double PCR[], double firstQ[], double secondQ[], double thirdQ[], double fourthQ[], int size)
+{
+    //this is designed to intentionally loop past the end of the array so that a 0 is inserted after the data. The PCR can only be zero if there
+    // were no Puts over the given period, which is extremely improbable. So using zero as the marker is safe.
+    for(int splitIndex = 0, index = 0; index <= size + 4; index+=4, splitIndex++)
+    {
+        firstQ[splitIndex]  = (index < size)     ? PCR[index]     : '\0';
+        secondQ[splitIndex] = (index + 1 < size) ? PCR[index + 1] : '\0';
+        thirdQ[splitIndex]  = (index + 2 < size) ? PCR[index + 2] : '\0';
+        fourthQ[splitIndex] = (index + 3 < size) ? PCR[index + 3] : '\0';
+    }
+}
 
+/**
+ * Calculates the variance for a given array of integers
+ * @return variance of the data set
+ */
+double CalculateVariance_PCR(double *data, int size)
+{
+    double stdVar = CalculateStandardDeviation_PCR(data, size);
+    double var = pow(stdVar, 2); //variance is the square of the standard deviation
+    return var;
+}
 
+/**
+ * Calculates the standard deviation for a given array of integers
+ * @return standard deviation of the data set
+ */
+double CalculateStandardDeviation_PCR(double *data, int size)
+{
+    double sum = 0;
+    double xbar = Mean_PCR(data);
+    int index = 0;
+
+    //Get the sum of (xbar - xi)^2
+    //0 was used to mark the end of the data
+    for(; data[index] != '\0'; index++)
+    {
+        double temp = xbar - data[index];
+        sum += pow(temp, 2); //square the sum
+    }
+
+    double div = sum / (index - 1);
+    double stdVar = sqrt(div);
+
+    return stdVar;
+}
+
+/**
+ * Calculate the mean of an array of integers
+ * @param data
+ * @return average value
+ * @author George Ebeling
+ */
+double Mean_PCR(double *data)
+{
+    double sum = 0;
+    int index = 0;
+
+    //0 was used to mark the end of the data
+    for(; data[index] != '\0'; index++)
+    {
+        sum += data[index];
+    }
+    double mean = (double)sum/(index-1);
+    return mean;
+}
