@@ -105,9 +105,9 @@ void SplitIntoQuarterSet(const double PCR[], double splits[4][QUARTERSPLITSIZE],
 double Mean_PCR(double *data);
 double CalculateStandardDeviation_PCR(double *data, int size);
 double CalculateVariance_PCR(double *data, int size);
-
-void QuarterlyStatistics_StdandVar(const double *PCRs, int size);
-void MonthlyStatistics_StdandVar(const double *PCRs, int size);
+double CalculateCoefficientOfVariation_PCR(double *data, int size);
+void QuarterlyStatistics(const double *PCRs, int size);
+void MonthlyStatistics(const double *PCRs, int size);
 
 /* Global variables */
 int i = 0;
@@ -128,8 +128,8 @@ int main(){
     struct date end = {4, 10, 19};
 
 //    MarketType_SixMonthPeriod(dataArr, &start, &end);
-    MarketType_Quarterly(dataArr, &start, &end);
-//    MarketType_Monthly(dataArr, &start, &end);
+//    MarketType_Quarterly(dataArr, &start, &end);
+    MarketType_Monthly(dataArr, &start, &end);
 
     return 0;
 }
@@ -334,27 +334,27 @@ void MarketType_Quarterly(const struct dataEntry *dataArr, const struct date *st
         IncreaseMonth(&period, periodLength);
     }
 
-    QuarterlyStatistics_StdandVar(PCRs, 37);
+    QuarterlyStatistics(PCRs, 37);
 }
 
-/**
+/*************************************************************************************************************************
  * Print the variance and the standard deviation of each quarter.
+ * @param PCRs An array of the quarterly PCR
+ * @param pcrsize the size of the PCR array
  * @author George Ebeling
- */
-void QuarterlyStatistics_StdandVar(const double *PCRs, int pcrsize) {
+ ************************************************************************************************************************/
+void QuarterlyStatistics(const double *PCRs, int pcrsize) {
     double quarters[4][QUARTERSPLITSIZE];
     SplitIntoQuarterSet(PCRs, quarters, pcrsize);
     double vari[4];
     double std[4];
 
-    for(int index = 0; index < 4; index++)
+    for(int index = 0; index < 4; index++) {
         std[index] = CalculateStandardDeviation_PCR(quarters[index], pcrsize);
-
-    for(int index = 0; index < 4; index++)
         vari[index] = CalculateVariance_PCR(quarters[index], pcrsize);
-
-    for(int index = 0; index < 4; index++)
-        printf("\nvariance of %d quarter = %f\tstandard dev = %f\n", index, vari[index], std[index]);
+        double covar = CalculateCoefficientOfVariation_PCR(quarters[index], pcrsize);
+        printf("variance of %d quarter = %f\tstandard dev = %f\tco variance = %f\n", index + 1, vari[index], std[index], covar);
+    }
 }
 
 /*************************************************************************************************************************
@@ -378,27 +378,27 @@ void MarketType_Monthly(const struct dataEntry *dataArr, const struct date *star
 
         IncreaseMonth(&period, periodLength);
     }
-    MonthlyStatistics_StdandVar(PCRs, 111);
+    MonthlyStatistics(PCRs, 111);
 }
 
-/**
+/*************************************************************************************************************************
  * Print the variance and the standard deviation of each quarter.
+ * @param PCRs An array of the monthly PCR
+ * @param pcrsize the size of the PCR array
  * @author George Ebeling
- */
-void MonthlyStatistics_StdandVar(const double *PCRs, int size) {
+ ************************************************************************************************************************/
+void MonthlyStatistics(const double *PCRs, int size) {
     double months[12][QUARTERSPLITSIZE];
     SplitIntoMonthsSet(PCRs, months, size);
     double vari[12];
     double std[12];
 
-    for(int index = 0; index < 12; index++)
+    for(int index = 0; index < 12; index++) {
         std[index] = CalculateStandardDeviation_PCR(months[index], size);
-
-    for(int index = 0; index < 12; index++)
         vari[index] = CalculateVariance_PCR(months[index], size);
-
-    for(int index = 0; index < 12; index++)
-        printf("variance of %2d month = %f\t\tstandard dev = %f\n", index+1, vari[index], std[index]);
+        double covar = CalculateCoefficientOfVariation_PCR(months[index], size);
+        printf("variance of %2d month = %f\t\tstandard dev = %f\t\tco variance = %f\n", index + 1, vari[index], std[index], covar);
+    }
 }
 
 /*************************************************************************************************************************
@@ -506,7 +506,7 @@ int FindStartIndex(struct date start, struct dataEntry const dataArr[NUMENTRIES]
     return index;
 }
 
-/**
+/************************************************************************************************************************
  * Splits the monthly PCR information into arrays for each month.
  * @param PCR Put call information for each month in calendar order (Jan, Feb, ... , Dec, Jan)
  * @param months A two dimensional array of the dimensions 12xMONTHSPLITSIZE
@@ -527,13 +527,13 @@ void SplitIntoMonthsSet(const double PCR[], double months[12][MONTHSPLITSIZE], i
 }
 
 
-/**
+/************************************************************************************************************************
  * Splits the monthly PCR information into arrays for each quarter.
  * @param PCR Put call information for each month in calendar order (Q1, Q2, Q3, Q4, Q1, ...)
  * @param splits A two dimensional array of the dimensions 3xQUARTERSPLITSIZE
  * @param size The size of the PCR array
  * @author George Ebeling
- */
+ ***********************************************************************************************************************/
 void SplitIntoQuarterSet(const double PCR[], double splits[4][QUARTERSPLITSIZE], int size)
 {
     //this is designed to intentionally loop past the end of the array so that a 0 is inserted after the data. The PCR can only be zero if there
@@ -547,11 +547,11 @@ void SplitIntoQuarterSet(const double PCR[], double splits[4][QUARTERSPLITSIZE],
     }
 }
 
-/**
- * Calculates the variance for a given array of integers
+/************************************************************************************************************************
+ * Calculates the variance for a given array of PCR
  * @return variance of the data set
  * @author George Ebeling
- */
+ ***********************************************************************************************************************/
 double CalculateVariance_PCR(double *data, int size)
 {
     double stdVar = CalculateStandardDeviation_PCR(data, size);
@@ -560,10 +560,25 @@ double CalculateVariance_PCR(double *data, int size)
 }
 
 /**
+ * Calculates the coefficient of variation for a given array of PCR
+ * @param data
+ * @param size
+ * @return
+ */
+double CalculateCoefficientOfVariation_PCR(double *data, int size)
+{
+    double variance = CalculateStandardDeviation_PCR(data, size);
+    double mean = Mean_PCR(data);
+    double covar = variance / mean;
+    return covar;
+
+}
+
+/************************************************************************************************************************
  * Calculates the standard deviation for a given array of integers
  * @return standard deviation of the data set
  * @author George Ebeling
- */
+ ***********************************************************************************************************************/
 double CalculateStandardDeviation_PCR(double *data, int size)
 {
     double sum = 0;
@@ -584,12 +599,12 @@ double CalculateStandardDeviation_PCR(double *data, int size)
     return stdVar;
 }
 
-/**
+/************************************************************************************************************************
  * Calculate the mean of an array of integers
  * @param data
  * @return average value
  * @author George Ebeling
- */
+ ***********************************************************************************************************************/
 double Mean_PCR(double *data)
 {
     double sum = 0;
